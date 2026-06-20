@@ -1,0 +1,55 @@
+# 亚体教务系统 — Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# 数据库 & 数据文件
+*.db
+*.sqlite3
+data/
+!deploy/init_data/
+
+# 环境变量 & 密钥
+.env
+.env.local
+.env.production
+*.key
+*.pem
+secrets/
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# 日志
+logs/
+*.log
+
+# Obsidian
+.obsidian/
+
+# 大文件（模型/向量库）
+*.gguf
+*.bin
+*.safetensors
+vector_db/
+semantic_index/
+
+# 临时文件
+tmp/
+temp/

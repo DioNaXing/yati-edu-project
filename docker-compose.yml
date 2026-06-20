@@ -1,0 +1,66 @@
+# 亚体教务系统 v1.0 — Docker Compose 云部署
+# 使用: docker compose up -d
+# 💰 变现点：docker-compose.yml 可打包出售给其他体培机构
+# 📦 打包节点：一个 compose = 完整生产环境
+
+version: "3.8"
+
+services:
+  # ─── 亚体少儿运动馆教务 核心服务 ─────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+    container_name: yati-edu-api
+    restart: always
+    environment:
+      - DATABASE_URL=sqlite:///data/yati_edu.db
+      - SECRET_KEY=${SECRET_KEY}
+      - ONE_API_BASE_URL=${ONE_API_BASE_URL:-http://one-api:3000/v1}
+      - ONE_API_TOKEN=${ONE_API_TOKEN}
+      - WECOM_CORP_ID=${WECOM_CORP_ID}
+      - WECOM_AGENT_ID=${WECOM_AGENT_ID}
+      - WECOM_APP_SECRET=${WECOM_APP_SECRET}
+    volumes:
+      - ./data:/app/data          # SQLite 持久化
+    networks:
+      - yati-edu-net
+    # 不暴露端口到宿主机，走 nginx 代理
+
+  # ─── Nginx 反向代理 + SSL ────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: yati-edu-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./deploy/ssl:/etc/nginx/ssl:ro       # SSL 证书
+      - ./frontend:/usr/share/nginx/html:ro  # 静态前端
+    depends_on:
+      - backend
+    networks:
+      - yati-edu-net
+
+  # ─── 可选：One API（AI 网关）─────────────
+  # 如果服务器上已经有 One API，注释掉这部分
+  one-api:
+    image: justsong/one-api:latest
+    container_name: yati-edu-one-api
+    restart: always
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./data/one-api:/data
+    environment:
+      - TZ=Asia/Shanghai
+    networks:
+      - yati-edu-net
+    profiles:
+      - full      # docker compose --profile full up 才启动
+
+networks:
+  yati-edu-net:
+    driver: bridge

@@ -1,0 +1,32 @@
+# 亚体教务系统 v1.0 — Python 依赖
+# 安装: pip install -r requirements.txt
+# 💰 变现点：整个项目可 Docker 部署为 SaaS
+# 📦 打包节点：requirements.txt = 一次 pip install 即可运行
+
+# ── Web 框架 ──────────────────────
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.5.0
+
+# ── 数据库 ────────────────────────
+sqlalchemy>=2.0.25
+aiosqlite>=0.19.0
+
+# ── 认证 ──────────────────────────
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+python-multipart>=0.0.6
+
+# ── HTTP 客户端 ───────────────────
+httpx>=0.26.0
+requests>=2.31.0
+
+# ── 企业微信 ──────────────────────
+# wecom-sdk 可选，手动 HTTP 调用即可
+
+# ── AI 增强（可选） ───────────────
+openai>=1.12.0
+
+# ── 工具 ──────────────────────────
+python-dotenv>=1.0.0
+pyyaml>=6.0

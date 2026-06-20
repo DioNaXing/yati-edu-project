@@ -1,0 +1,439 @@
+# ============================================================
+# AI 教务管家 & AI 店长 Skill 配置文件
+# 版本: v2.0
+# 路径: ~/.hermes/config/ai_skills.yaml
+# ============================================================
+
+skills:
+
+  # ========================================
+  # AI 教务管家 (EduButler)
+  # ========================================
+  edu_butler:
+
+    # 🔴 续费预警
+    renewal_alert:
+      enabled: true
+      description: "学员剩余课时不足时自动预警"
+      threshold: 5                          # 剩余课时 ≤ N 节触发
+      schedule: "0 9 * * *"                 # 每日 09:00
+      data_sources:
+        - type: "xiaomaizhujiao"
+          table: "students"
+          fields: ["id", "name", "remaining_hours", "parent_phone"]
+      actions:
+        - wecom_push                         # 企业微信推送
+        - gen_script                         # 生成跟进话术
+      config:
+        wecom_receivers: ["admin", "head_teacher"]
+        discount_text: "本周续费享 9 折优惠"
+        script_template: "{student_name}家长您好，{student_name}当前剩余课时仅 {remaining} 节，建议尽快续费以保持学习连续性。{discount}"
+
+    # 🟡 消课异常
+    absence_alert:
+      enabled: true
+      description: "连续多周未消课自动预警并发放优惠券"
+      threshold_weeks: 2                     # 连续 N 周未消课触发
+      schedule: "0 10 * * 1"                 # 每周一 10:00
+      data_sources:
+        - type: "xiaomaizhujiao"
+          table: "attendance"
+          fields: ["student_id", "class_id", "date", "hours_consumed"]
+        - type: "xiaomaizhujiao"
+          table: "students"
+          fields: ["id", "name"]
+      actions:
+        - wecom_push
+        - issue_coupon                       # 自动发放优惠券
+      config:
+        wecom_receivers: ["admin", "head_teacher"]
+        coupon_type: "discount"              # discount | free_class | cash
+        coupon_value: 200                    # 满减金额 或 折扣百分比
+        coupon_condition: "满20节可用"
+        coupon_expiry_days: 30
+
+    # 📅 排课推荐
+    class_recommend:
+      enabled: true
+      description: "学员未选班时自动推荐合适班级"
+      schedule: "0 8 * * *"                  # 每日 08:00
+      data_sources:
+        - type: "xiaomaizhujiao"
+          table: "students"
+          fields: ["id", "name", "age", "status", "enrolled_courses"]
+        - type: "xiaomaizhujiao"
+          table: "classes"
+          fields: ["id", "name", "age_min", "age_max", "capacity", "current_enrollment"]
+      actions:
+        - gen_recommendations                 # 生成推荐列表
+        - wecom_push
+      config:
+        age_tolerance: 1                      # 年龄容差 ±N 岁
+        max_recommendations: 3                # 最多推荐 N 个班级
+        exclude_full: true                    # 排除已满班级
+        wecom_receivers: ["head_teacher"]
+
+    # 📊 教练负载
+    coach_load:
+      enabled: true
+      description: "教练班容超阈值时预警"
+      load_threshold: 0.80                   # 班容 > 80% 触发
+      schedule: "0 9 * * *"                  # 每日 09:00
+      data_sources:
+        - type: "xiaomaizhujiao"
+          table: "classes"
+          fields: ["id", "name", "capacity", "current_enrollment", "coach_id"]
+        - type: "xiaomaizhujiao"
+          table: "coaches"
+          fields: ["id", "name"]
+      actions:
+        - wecom_push
+      config:
+        wecom_receivers: ["admin", "head_teacher"]
+        alert_coaches: []                     # 空白=所有教练，可指定关注列表
+        suggest_parallel_class: true          # 是否建议新增平行班
+
+    # 🎂 生日营销
+    birthday_marketing:
+      enabled: true
+      description: "学员生日前自动发送祝福和优惠券"
+      days_before: 3                          # 生日前 N 天触发
+      schedule: "0 8 * * *"                  # 每日 08:00
+      data_sources:
+        - type: "xiaomaizhujiao"
+          table: "students"
+          fields: ["id", "name", "birthday", "parent_phone"]
+      actions:
+        - gen_greeting                        # 生成生日祝福
+        - issue_coupon                        # 发放生日优惠券
+        - wecom_push
+      config:
+        coupon_type: "discount"
+        coupon_value: 88                      # 88 折 / 88 元
+        coupon_expiry_days: 30
+        greeting_template: "🎂 {student_name}小朋友，生日快乐！愿你在 {school_name} 的每一天都充满快乐和成长。我们为你准备了一份生日礼物——{coupon_desc}，记得查收哦！"
+        school_name: "XX培训中心"
+
+    # 📈 升班提醒
+    upgrade_reminder:
+      enabled: true
+      description: "学员年龄达到下一阶段班级时推荐升班"
+      schedule: "0 9 * * 1"                  # 每周一 09:00
+      data_sources:
+        - type: "xiaomaizhujiao"
+          table: "students"
+          fields: ["id", "name", "age", "enrolled_classes"]
+        - type: "xiaomaizhujiao"
+          table: "classes"
+          fields: ["id", "name", "age_min", "age_max", "level"]
+      actions:
+        - gen_recommendations                 # 推荐升班班级
+        - gen_trial_invite                    # 生成试课邀请
+        - wecom_push
+      config:
+        age_margin: 0                         # 年龄边界容差
+        trial_class_template: "{student_name}家长您好！{student_name}已达到{target_class}的适龄阶段，我们诚邀您参加免费的升班试听课。时间：{trial_time}，地点：{location}。"
+        trial_time: "周六 10:00-10:45"
+        location: "XX培训中心 2号教室"
+
+    # 💰 欠费催缴
+    overdue_payment:
+      enabled: true
+      description: "应收未收超期自动分级催缴"
+      overdue_days: 30                        # 欠费超过 N 天触发
+      schedule: "0 9 * * *"                  # 每日 09:00
+      data_sources:
+        - type: "xiaomaizhujiao"
+          table: "finance"
+          fields: ["student_id", "amount_due", "amount_paid", "due_date"]
+        - type: "xiaomaizhujiao"
+          table: "students"
+          fields: ["id", "name", "parent_name", "parent_phone"]
+      actions:
+        - gen_script                          # 分级催缴话术
+        - wecom_push
+      config:
+        level_thresholds:
+          level1: [30, 60]                    # 温和提醒
+          level2: [60, 90]                    # 正式催缴
+          level3: [90, 999]                   # 最后通牒
+        level_templates:
+          level1: "{parent_name}您好，{student_name}的课程费用尚有 {amount} 元未结清，方便时请联系我们处理。"
+          level2: "{parent_name}您好，{student_name}的课程费用已逾期 {days} 天，请尽快处理以免影响课程安排。"
+          level3: "{parent_name}您好，{student_name}的课程费用已严重逾期，如在 {deadline} 前未处理，将暂停课程服务。"
+        suspension_deadline: 7                # 最后通牒后 N 天暂停服务
+        wecom_receivers: ["admin", "finance"]
+
+    # 📋 日报生成 (v1.0)
+    daily_report:
+      enabled: true
+      description: "每日运营日报自动生成"
+      schedule: "0 22 * * *"                 # 每日 22:00
+      data_sources:
+        - type: "xiaomaizhujiao"
+          table: "attendance"
+        - type: "xiaomaizhujiao"
+          table: "students"
+        - type: "xiaomaizhujiao"
+          table: "finance"
+      actions:
+        - gen_report
+        - feishu_push                         # 飞书消息推送
+      config:
+        report_sections:
+          - "daily_summary"                   # 当日消课总览
+          - "renewal_alerts"                  # 续费预警名单
+          - "new_enrollments"                 # 新报/续费统计
+          - "anomaly_events"                  # 异常事件摘要
+          - "todo_items"                      # 待办事项
+        feishu_chat_id: ""
+
+  # ========================================
+  # AI 店长 (StoreManager)
+  # ========================================
+  store_manager:
+
+    # 📊 教练绩效排名
+    coach_performance:
+      enabled: true
+      description: "教练综合绩效周/月排名"
+      schedule:
+        weekly: "0 20 * * 0"                 # 每周日 20:00 周报
+        monthly: "0 9 1 * *"                 # 每月 1 日 09:00 月报
+      data_sources:
+        - type: "xiaomaizhujiao"
+          table: "attendance"
+          fields: ["student_id", "class_id", "date", "hours_consumed"]
+        - type: "xiaomaizhujiao"
+          table: "classes"
+          fields: ["id", "coach_id", "current_enrollment", "capacity"]
+      actions:
+        - gen_report
+        - wecom_push
+        - feishu_push
+      config:
+        weights:
+          attendance_rate: 0.40               # 消课完成率
+          renewal_rate: 0.30                  # 续费率
+          full_class_rate: 0.20               # 满班率
+          referral_rate: 0.10                 # 转介绍率
+        alert_threshold_stddev: 1.0           # 预警：低于平均 N 个标准差
+        wecom_receivers: ["admin"]
+        feishu_chat_id: ""
+
+    # 📈 收入预测
+    revenue_forecast:
+      enabled: true
+      description: "基于历史数据和在册学员预测未来收入"
+      forecast_weeks: 4                       # 预测未来 N 周
+      schedule: "0 9 * * 1"                  # 每周一 09:00
+      data_sources:
+        - type: "xiaomaizhujiao"
+          table: "finance"
+          fields: ["date", "amount", "type"]
+        - type: "xiaomaizhujiao"
+          table: "students"
+          fields: ["id", "remaining_hours", "renewal_date"]
+      actions:
+        - gen_forecast
+        - feishu_push
+      config:
+        confidence_interval: 0.15             # 置信区间 ±15%
+        recent_weights: [0.4, 0.3, 0.2, 0.1] # 近4周权重
+        renewal_rate: 0.75                    # 参考续费率
+        feishu_chat_id: ""
+
+    # 🎯 获客ROI
+    acquisition_roi:
+      enabled: true
+      description: "各获客渠道投入产出比分析"
+      schedule: "0 9 * * 1"                  # 每周一 09:00
+      data_sources:
+        - type: "crm"
+          table: "marketing_funnel"
+          fields: ["channel", "impressions", "inquiries", "visits", "trials", "deals", "revenue"]
+        - type: "crm"
+          table: "marketing_cost"
+          fields: ["channel", "cost", "period"]
+      actions:
+        - gen_report
+        - feishu_push
+      config:
+        channels:
+          - name: "大众点评"
+            id: "dianping"
+          - name: "抖音"
+            id: "douyin"
+          - name: "朋友介绍"
+            id: "referral"
+          - name: "地推"
+            id: "offline"
+          - name: "微信广告"
+            id: "wechat_ad"
+          - name: "自然到店"
+            id: "organic"
+        period_days: 30                       # 统计周期
+        feishu_chat_id: ""
+
+    # ⚠️ 流失预警
+    churn_alert:
+      enabled: true
+      description: "基于学员生命周期数据识别高危流失学员"
+      risk_threshold: 70                      # 风险分 ≥ N 标记高危
+      schedule: "0 9 * * 1"                  # 每周一 09:00
+      data_sources:
+        - type: "xiaomaizhujiao"
+          table: "attendance"
+          fields: ["student_id", "date"]
+        - type: "xiaomaizhujiao"
+          table: "students"
+          fields: ["id", "name", "remaining_hours", "renewal_history"]
+        - type: "crm"
+          table: "complaints"
+          fields: ["student_id", "status", "date"]
+      actions:
+        - gen_report
+        - wecom_push
+      config:
+        weights:
+          inactive_weeks: 0.35                # 连续未消课周数
+          low_hours: 0.25                     # 剩余课时 ≤ 5
+          absence_frequency: 0.20             # 近3月请假次数
+          unresolved_complaints: 0.20         # 未处理投诉
+        wecom_receivers: ["admin", "head_teacher"]
+
+    # 🏪 班容优化
+    classroom_optimization:
+      enabled: true
+      description: "班级满班率和教室空置率分析"
+      schedule: "0 20 * * 0"                 # 每周日 20:00
+      data_sources:
+        - type: "xiaomaizhujiao"
+          table: "classes"
+          fields: ["id", "name", "capacity", "current_enrollment", "schedule", "classroom"]
+        - type: "xiaomaizhujiao"
+          table: "classrooms"
+          fields: ["id", "name", "area_sqm", "rental_cost"]
+      actions:
+        - gen_report
+        - feishu_push
+      config:
+        full_threshold: 0.85                  # 满班阈值
+        empty_threshold: 0.30                 # 空置告警阈值
+        merge_threshold: 0.40                 # 建议合并的低满班率
+        feishu_chat_id: ""
+
+    # 📋 周报自动生成
+    weekly_report:
+      enabled: true
+      description: "全运营数据汇总生成结构化周报"
+      schedule: "0 22 * * 0"                 # 每周日 22:00
+      data_sources: []                        # 汇总所有 skill 输出
+      actions:
+        - gen_report
+        - feishu_push
+      config:
+        report_sections:
+          - "core_metrics"                    # 核心指标总览
+          - "yoy_qoq_comparison"              # 同比/环比
+          - "coach_ranking"                   # 教练排名
+          - "revenue_analysis"                # 收入分析
+          - "churn_warning"                   # 流失预警
+          - "classroom_status"                # 班容状态
+          - "action_suggestions"              # 行动建议
+        action_suggestions_count: 5
+        feishu_chat_id: ""
+
+    # 📊 10周财务趋势 (v1.0)
+    finance_trend:
+      enabled: true
+      description: "过去10周收入/支出/利润趋势分析"
+      schedule: "0 9 * * 1"                  # 每周一 09:00
+      data_sources:
+        - type: "xiaomaizhujiao"
+          table: "finance"
+          fields: ["date", "amount", "type", "category"]
+      actions:
+        - gen_report
+        - feishu_push
+      config:
+        trend_weeks: 10
+        anomaly_stddev: 3.0                   # 异常波动检测：3σ
+        feishu_chat_id: ""
+
+    # 🔍 异常退款检测 (v1.0)
+    refund_anomaly:
+      enabled: true
+      description: "异常大额退款和退款率异常检测"
+      schedule: "0 9 * * *"                  # 每日 09:00
+      data_sources:
+        - type: "xiaomaizhujiao"
+          table: "finance"
+          fields: ["id", "student_id", "amount", "date", "type", "reason"]
+      actions:
+        - gen_report
+        - wecom_push
+      config:
+        single_amount_stddev: 3.0             # 单笔超 N 个标准差
+        monthly_rate_threshold: 0.05          # 月度退款率 > 5%
+        wecom_receivers: ["admin", "finance"]
+
+    # 💰 月度盈亏预估 (v1.0)
+    monthly_pl:
+      enabled: true
+      description: "当月盈亏预估"
+      schedule: "0 9 1 * *"                  # 每月 1 日 09:00
+      data_sources:
+        - type: "xiaomaizhujiao"
+          table: "finance"
+          fields: ["date", "amount", "type", "category"]
+      actions:
+        - gen_report
+        - feishu_push
+      config:
+        fixed_costs:                          # 固定支出项
+          - name: "房租"
+            amount: 15000
+          - name: "人工成本"
+            amount: 60000
+          - name: "水电物业"
+            amount: 5000
+        feishu_chat_id: ""
+
+  # ========================================
+  # 全局配置
+  # ========================================
+  global:
+    # 数据源连接配置
+    data_sources:
+      xiaomaizhujiao:
+        type: "api"
+        base_url: "${XIAOMAI_API_URL}"
+        api_key: "${XIAOMAI_API_KEY}"
+        timeout: 30
+      crm:
+        type: "api"
+        base_url: "${CRM_API_URL}"
+        api_key: "${CRM_API_KEY}"
+        timeout: 30
+
+    # 通知通道配置
+    notifications:
+      wecom:
+        enabled: true
+        webhook_url: "${WECOM_WEBHOOK_URL}"
+      feishu:
+        enabled: true
+        webhook_url: "${FEISHU_WEBHOOK_URL}"
+
+    # 日志
+    logging:
+      level: "INFO"
+      file: "~/.hermes/logs/ai_skills.log"
+      max_size_mb: 10
+      backup_count: 5
+
+    # 执行模式
+    execution:
+      dry_run: false                          # 试运行模式（不执行实际动作）
+      max_concurrent_skills: 3                # 最大并发 skill 数
