@@ -35,7 +35,7 @@ EXPOSE 8000
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD curl -f http://localhost:8000/api/health || exit 1
 
 # 启动服务
 CMD ["uvicorn", "backend.yati_edu_core:app", "--host", "0.0.0.0", "--port", "8000"]
