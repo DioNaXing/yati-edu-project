@@ -1,0 +1,36 @@
+<view class="container">
+  <view class="section">
+    <view class="section-title">我的宝贝</view>
+
+    <view class="kid-card" wx:for="{{kids}}" wx:key="id">
+      <view class="kid-avatar">{{item.name[0]}}</view>
+      <view class="kid-info">
+        <text class="kid-name">{{item.name}}</text>
+        <text class="kid-meta">{{item.age}}岁 · {{item.gender === 'M' ? '男孩' : '女孩'}}</text>
+      </view>
+      <view class="kid-lessons">
+        <text class="lessons-num">{{item.lessons_left}}</text>
+        <text class="lessons-label">课时</text>
+      </view>
+    </view>
+
+    <button class="btn-add" bindtap="addKid">+ 添加宝贝</button>
+  </view>
+
+  <view class="section" wx:if="{{selectedKid}}">
+    <view class="section-title">{{selectedKid.name}} 的训练记录</view>
+    <view class="record-list">
+      <view class="record-item" wx:for="{{records}}" wx:key="id">
+        <view class="record-date">{{item.date}}</view>
+        <view class="record-detail">
+          <text class="record-course">{{item.course}}</text>
+          <text class="record-coach">教练: {{item.coach}}</text>
+        </view>
+        <view class="record-score">{{item.score || '-'}}分</view>
+      </view>
+    </view>
+    <view class="empty" wx:if="{{records.length === 0}}">
+      <text>暂无训练记录</text>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,72 @@
+<view class="container">
+  <!-- 顶部横幅 -->
+  <view class="banner">
+    <image class="banner-bg" src="/images/banner.jpg" mode="aspectFill" />
+    <view class="banner-overlay">
+      <text class="banner-title">亚体少儿运动馆</text>
+      <text class="banner-sub">专业儿童体能训练</text>
+    </view>
+  </view>
+
+  <!-- 快捷入口 -->
+  <view class="quick-actions">
+    <view class="action-item" bindtap="goBooking">
+      <text class="action-icon">📅</text>
+      <text class="action-text">预约上课</text>
+    </view>
+    <view class="action-item" bindtap="goKids">
+      <text class="action-icon">👶</text>
+      <text class="action-text">我的宝贝</text>
+    </view>
+    <view class="action-item" bindtap="goProgress">
+      <text class="action-icon">📊</text>
+      <text class="action-text">训练记录</text>
+    </view>
+    <view class="action-item" bindtap="goContact">
+      <text class="action-icon">💬</text>
+      <text class="action-text">联系教练</text>
+    </view>
+  </view>
+
+  <!-- 今日课程 -->
+  <view class="section" wx:if="{{todayClasses.length > 0}}">
+    <view class="section-header">
+      <text class="section-title">今日课程</text>
+    </view>
+    <view class="class-list">
+      <view class="class-card" wx:for="{{todayClasses}}" wx:key="id">
+        <view class="class-time">{{item.start_time}}</view>
+        <view class="class-info">
+          <text class="class-name">{{item.course_name}}</text>
+          <text class="class-coach">教练: {{item.coach_name}}</text>
+        </view>
+        <view class="class-status {{item.status}}">{{item.status_text}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 剩余课时 -->
+  <view class="section" wx:if="{{lessonsLeft !== null}}">
+    <view class="section-header">
+      <text class="section-title">课时余额</text>
+    </view>
+    <view class="balance-card">
+      <text class="balance-num">{{lessonsLeft}}</text>
+      <text class="balance-unit">节</text>
+      <button class="btn-recharge" bindtap="goRecharge">立即续费</button>
+    </view>
+  </view>
+
+  <!-- 最新动态 -->
+  <view class="section">
+    <view class="section-header">
+      <text class="section-title">场馆动态</text>
+    </view>
+    <view class="news-list">
+      <view class="news-item" wx:for="{{news}}" wx:key="id">
+        <text class="news-title">{{item.title}}</text>
+        <text class="news-date">{{item.date}}</text>
+      </view>
+    </view>
+  </view>
+</view>

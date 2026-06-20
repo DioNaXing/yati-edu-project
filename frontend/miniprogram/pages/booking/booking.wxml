@@ -1,0 +1,50 @@
+<view class="container">
+  <view class="section">
+    <view class="section-title">选择宝贝</view>
+    <picker mode="selector" range="{{kidNames}}" bindchange="onKidChange">
+      <view class="picker">{{selectedKid || '请选择学员'}}</view>
+    </picker>
+  </view>
+
+  <view class="section">
+    <view class="section-title">选择课程</view>
+    <view class="course-list">
+      <view class="course-card {{item.id === courseId ? 'active' : ''}}"
+            wx:for="{{courses}}" wx:key="id"
+            bindtap="selectCourse" data-id="{{item.id}}">
+        <text class="course-name">{{item.name}}</text>
+        <text class="course-price">¥{{item.price}}/节</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">选择日期</view>
+    <view class="date-scroll">
+      <view class="date-item {{item.full === date ? 'active' : ''}}"
+            wx:for="{{dates}}" wx:key="full"
+            bindtap="selectDate" data-date="{{item.full}}">
+        <text class="date-week">{{item.week}}</text>
+        <text class="date-day">{{item.day}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="section" wx:if="{{slots.length > 0}}">
+    <view class="section-title">选择时间</view>
+    <view class="slot-grid">
+      <view class="slot-item {{item.booked ? 'booked' : ''}} {{item.id === slotId ? 'active' : ''}}"
+            wx:for="{{slots}}" wx:key="id"
+            bindtap="selectSlot" data-id="{{item.id}}"
+            data-booked="{{item.booked}}">
+        <text class="slot-time">{{item.start}} - {{item.end}}</text>
+        <text class="slot-coach">{{item.coach}}</text>
+        <text class="slot-available">余{{item.available}}位</text>
+      </view>
+    </view>
+  </view>
+
+  <button class="btn-book" bindtap="submitBooking" disabled="{{!canBook}}">
+    确认预约
+  </button>
+</view>
