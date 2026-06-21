@@ -1,6 +1,6 @@
 // API 请求封装
 // 备案前用 IP，备案后切换域名: https://api.yatitiyu.com
-const API_BASE = 'http://175.178.243.250';
+const API_BASE = 'https://yatitiyu.com';
 
 function request(options) {
   const token = wx.getStorageSync('token') || '';

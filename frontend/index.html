@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>亚体少儿运动馆</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; display: flex; justify-content: center; align-items: center; }
+    .container { text-align: center; padding: 2rem; }
+    h1 { font-size: 2.5rem; background: linear-gradient(135deg, #f97316, #ef4444); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 1rem; }
+    p { color: #94a3b8; font-size: 1.2rem; margin-bottom: 2rem; }
+    .status { display: inline-flex; align-items: center; gap: 8px; background: #1e293b; padding: 12px 24px; border-radius: 12px; }
+    .dot { width: 10px; height: 10px; background: #22c55e; border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .links { margin-top: 2rem; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .links a { color: #38bdf8; text-decoration: none; padding: 8px 16px; border: 1px solid #334155; border-radius: 8px; transition: all 0.2s; }
+    .links a:hover { background: #1e293b; border-color: #38bdf8; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>亚体少儿运动馆</h1>
+    <p>AI 驱动的少儿体培教务系统</p>
+    <div class="status"><span class="dot"></span> 系统运行中</div>
+    <div class="links">
+      <a href="/api/students">API: 学员列表</a>
+      <a href="/health">健康检查</a>
+      <a href="https://github.com/DioNaXing/yati-edu-project">GitHub</a>
+    </div>
+  </div>
+</body>
+</html>
